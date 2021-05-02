@@ -1,5 +1,5 @@
-import flask, json, random
-from flask import request, jsonify, redirect
+import flask, random
+from flask import request, jsonify, redirect, render_template
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -30,21 +30,15 @@ def dist_id(sensors):
 
 @app.route('/', methods=['GET'])
 def home():
-    return '''
-    <body>
-		<p>
-	 	<a href="/sensors/add">Dodaj czujnik</a>
-		<br><a href="
-	</body>
-    '''
+    return render_template('index.html')
 
 
-@app.route('/sensors/all', methods=['GET'])
+@app.route('/show/all', methods=['GET'])
 def api_all():
     return jsonify(sensors)
 
 
-@app.route('/sensors', methods=['GET'])
+@app.route('/show', methods=['GET'])
 def api_id():
     # Check if an ID was provided as part of the URL.
     # If ID is provided, assign it to a variable.
@@ -67,8 +61,8 @@ def api_id():
     # Python dictionaries to the JSON format.
     return jsonify(result)
 
-@app.route('/sensors/add',methods = ['POST', 'GET'])
-def add_sensor():
+@app.route('/add',methods = ['POST', 'GET'])
+def api_add():
    if request.method == 'POST':
       name = request.form['name']
       surname = request.form['surname']
@@ -80,6 +74,6 @@ def add_sensor():
       sensors.append({'id': dist_id(sensors),
                       'address' : '{} {}, {} {}, {}'.format(street,number,code,town,country),
                       'owner' : '{} {}'.format(name, surname)})
-      return redirect('/')
+      return redirect('index.html')
    
 app.run()

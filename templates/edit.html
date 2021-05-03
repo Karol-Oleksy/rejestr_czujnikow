@@ -1,0 +1,17 @@
+<!doctype html>
+   <body>
+{% block content %}
+    <form action = "/edit_result" method = "post">		
+	<h1>Edycja danych:</h1>
+		
+    	<p>Id:<input type = "number" name = "id" value = {{ id }} readonly/>
+		<br>Właściciel:<input type = "text" name = "owner" value = "{{ owner }}" />
+		<br>Adres:<input type = "text" name = "address" value = "{{ address }}" />
+		</p>
+		
+	<p><input type = "submit" value = "Zapisz" /></p>
+    </form> 
+{% endblock %}  
+   </body>
+
+</html>

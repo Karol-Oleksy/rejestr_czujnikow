@@ -1,79 +1,101 @@
-import flask, random
+import flask
 from flask import request, jsonify, redirect, render_template
+from functions import dist_id, check_form, find_sensor
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 app.config['JSON_AS_ASCII'] = False
 
-# Create some test data for our catalog in the form of a list of dictionaries.
-sensors = [
-    {'id': 0,
-     'address': 'Mogilska 43, 31-545 Kraków, Polska',
-     'owner': 'Jan Kowalski'},
-    {'id': 1,
-     'address': 'Dywizjonu 303 16a/6, 44-196 Knurów, Polska',
-     'owner': 'Karol Oleksy'},
-    {'id': 2,
-     'address': 'Lesna 11, 44-100 Gliwice, Polska',
-     'owner': 'Błażej Bęben'}
-]
+#list for keeping the sensors' data
+sensors = []
 
-def dist_id(sensors):
-    ids = []
-    for sensor in sensors:
-        ids.append(sensor['id'])
-    rand = random.randint(10000,20000)
-    while rand in ids:  
-        rand = random.randint(10000,20000)
-    return rand
-
-
-@app.route('/', methods=['GET'])
+@app.route('/')
 def home():
     return render_template('index.html')
 
+@app.route('/add')
+def add():
+    return render_template('add.html')
 
-@app.route('/show/all', methods=['GET'])
-def api_all():
+@app.route('/choose_id')
+def choose_id():
+    return render_template('choose_id.html')
+
+@app.route('/id', methods=['POST'])
+def id_redirect():
+    id = request.form['id']
+    if request.form['button'] == 'Wyświetl':
+        return redirect('/show/{}'.format(id))
+    elif request.form['button'] == 'Usuń':
+        return redirect('/delete/{}'.format(id))
+    elif request.form['button'] == 'Edytuj':
+        return redirect('/edit/{}'.format(id))
+
+@app.route('/edit/<id>')
+def edit(id):
+    sensor = find_sensor(sensors,id)[0]
+    if not sensor:
+        return 'Brak czujnika o podanym id.'
+    else:
+        owner = sensor['owner']
+        address = sensor['address']
+        return render_template('edit.html', id=id, owner=owner, address=address)
+
+@app.route('/delete/<id>')
+def delete(id):
+    id = int(id)
+    sensor, i = find_sensor(sensors,id)
+    if not sensor:
+        return 'Brak czujnika o podanym id.' 
+    else:
+        sensors.pop(i)
+        return 'Usunięto czujnik o id {}.'.format(id)
+       
+
+@app.route('/show/all')
+def show_all():
     return jsonify(sensors)
 
-
-@app.route('/show', methods=['GET'])
-def api_id():
-    # Check if an ID was provided as part of the URL.
-    # If ID is provided, assign it to a variable.
-    # If no ID is provided, display an error in the browser.
-    if 'id' in request.args:
-        id = int(request.args['id'])
+@app.route('/show/<id>')
+def show_id(id):
+    id = int(id)
+    sensor = find_sensor(sensors,id)[0]
+    if not sensor:
+        return 'Brak czujnika o podanym id.'
     else:
-        return "Błąd: nie podano id czujnika. Spróbuj jeszcze raz."
+        return jsonify(sensor)
 
-    # Create an empty list for our results
-    
+@app.route('/add_result', methods=['POST'])
+def add_result():
+    if check_form(request.form) == 1:
+        return 'Któreś z pól jest puste. Wypełnij wszystkie pola.'
+    else:        
+        name = request.form['name']
+        surname = request.form['surname']
+        street = request.form['street']
+        number = request.form['number']
+        code = request.form['code']
+        town = request.form['town']
+        country = request.form['country']    
+        result = {'id': dist_id(sensors),
+                'address' : '{} {}, {} {}, {}'.format(street,number,code,town,country),
+                'owner' : '{} {}'.format(name, surname)}
+        sensors.append(result)
+        return 'Dodano czujnik o id {}.'.format(result['id'])
+  
+@app.route('/edit_result', methods=['POST'])
+def edit_result():
+    if check_form(request.form) == 1:
+        return 'Któreś z pól jest puste. Wypełnij wszystkie pola.'
+    else: 
+        i = find_sensor(sensors, request.form['id'])[1]
+        owner = request.form['owner']
+        address = request.form['address']
+        sensors[i]['owner'] = owner
+        sensors[i]['address'] = address
+        return 'Edytowano czujnik o id {}.'.format(request.form['id'])
 
-    # Loop through the data and match results that fit the requested ID.
-    # IDs are unique, but other fields might return many results
-    for sensor in sensors:
-        if sensor['id'] == id:
-            result = sensor
 
-    # Use the jsonify function from Flask to convert our list of
-    # Python dictionaries to the JSON format.
-    return jsonify(result)
 
-@app.route('/add',methods = ['POST', 'GET'])
-def api_add():
-   if request.method == 'POST':
-      name = request.form['name']
-      surname = request.form['surname']
-      street = request.form['street']
-      number = request.form['number']
-      code = request.form['code']
-      town = request.form['town']
-      country = request.form['country']      
-      sensors.append({'id': dist_id(sensors),
-                      'address' : '{} {}, {} {}, {}'.format(street,number,code,town,country),
-                      'owner' : '{} {}'.format(name, surname)})
-      return redirect('index.html')
    
 app.run()

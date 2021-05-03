@@ -51,7 +51,6 @@ def delete(id):
         sensors.pop(i)
         return 'Usunięto czujnik o id {}.'.format(id)
        
-
 @app.route('/show/all')
 def show_all():
     return jsonify(sensors)
